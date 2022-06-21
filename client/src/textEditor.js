@@ -17,7 +17,7 @@ const TOOLBAR_OPTIONS = [
 
 export default function TextEditor() {
     const [socket, setSocket] = useState()
-    const [quill, setQuill] = useState()
+    const [quill, setQuill] = useState() //To track the state of quill
 
     //Connecting to socket
     useEffect(() => {
@@ -29,8 +29,30 @@ export default function TextEditor() {
         }
     }, [])
 
+    //Emits event when changes are made on local machine
+    useEffect(() => {
+        if (socket == null || quill == null) return
+        const handler = (delta, oldDelta, source) => {
+            if (source !== "user") return  //makes sure that only user can set off changes
+            socket.emit("send-changes", delta) //emits this to our server 
+        }
+        quill.on('text-change', handler)
+        return () => {
+            quill.off('text-change', handler)
+        }
+    }, [socket, quill])
 
-
+    //Receives the events emitted elsewhere
+    useEffect(() => {
+        if (socket == null || quill == null) return
+        const handler = (delta) => {
+            quill.updateContents(delta)
+        }
+        socket.on('receive-changes', handler)
+        return () => {
+            socket.off('receive-change', handler)
+        }
+    }, [socket, quill])
 
     const wrapperRef = useCallback(wrapper => {
         if (wrapper == null) return
