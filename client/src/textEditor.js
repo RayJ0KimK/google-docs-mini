@@ -16,6 +16,7 @@ const TOOLBAR_OPTIONS = [
     ["image", "blockquote", "code-block"],
     ["clean"],
 ]
+const SAVE_INTERVAL_MS = 2000
 
 export default function TextEditor() {
     const { id: documentId } = useParams() //renaming id to documentID
@@ -71,6 +72,18 @@ export default function TextEditor() {
 
         socket.emit('get-document', documentId) // telling the document of which document we're part of
     }, [socket, quill, documentId]) //What do you do with dockumentID ? 
+
+    useEffect(() => {
+        if (socket == null || quill == null) return
+
+        const interval = setInterval(() => {
+            socket.emit('save-document', quill.getContents())
+        }, SAVE_INTERVAL_MS)
+
+        return () => {
+            clearInterval(interval)
+        }
+    }, [socket, quill])
 
     const wrapperRef = useCallback(wrapper => {
         if (wrapper == null) return
